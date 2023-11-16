@@ -28,8 +28,8 @@ select
 		WHEN a.start_execution_date IS NOT NULL AND a.stop_execution_date IS NOT NULL THEN 'Not running'
 	END AS 'RunStatus',
 	CAST(DATEPART(HOUR, a.start_execution_date) AS VARCHAR(2)) + 'h ' +
-    CAST(DATEPART(MINUTE, a.start_execution_date) AS VARCHAR(2)) + 'min ' +
-    CAST(DATEPART(SECOND, a.start_execution_date) AS VARCHAR(2)) + 'sec' AS Duration,
+    	CAST(DATEPART(MINUTE, a.start_execution_date) AS VARCHAR(2)) + 'min ' +
+    	CAST(DATEPART(SECOND, a.start_execution_date) AS VARCHAR(2)) + 'sec' AS Duration,
 	--FORMAT(DATEADD(SECOND, DATEDIFF(SECOND, a.start_execution_date, GETDATE()), '19000101'), 'HH:mm:ss') AS Duration,
 	FORMAT(a.start_execution_date, 'yyyy-MM-dd') AS RunDate
 from msdb.dbo.sysjobs j
