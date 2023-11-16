@@ -1,5 +1,5 @@
 --EXEC dbo.SendLongRunningReportLastHour;
-ALTER PROCEDURE dbo.SendLongRunningReportLastHour
+CREATE PROCEDURE dbo.SendLongRunningReportLastHour
 AS
 BEGIN
     -- Threshold for duration of a job
