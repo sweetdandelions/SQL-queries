@@ -35,6 +35,7 @@ ON j.job_id = a.job_id
 WHERE 
 	session_id = (SELECT MAX(session_id) FROM msdb.dbo.sysjobactivity)
 	AND (a.start_execution_date IS NOT NULL AND a.stop_execution_date IS NULL)
+	AND DATEDIFF(SECOND, a.start_execution_date, GETDATE()) > @ThresholdDuration * 60
 
 
     -- If there are long running jobs, send a single email notification with a formatted HTML table
