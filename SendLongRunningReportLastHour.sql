@@ -27,6 +27,9 @@ SELECT
 		WHEN a.start_execution_date IS NOT NULL AND a.stop_execution_date IS NULL THEN 'Running'
 		WHEN a.start_execution_date IS NOT NULL AND a.stop_execution_date IS NOT NULL THEN 'Not running'
 	END AS 'RunStatus',
+	--CONVERT(VARCHAR(5), DATEDIFF(HOUR, a.start_execution_date, GETDATE())) + 'h ' +
+    	--CONVERT(VARCHAR(5), DATEDIFF(MINUTE, a.start_execution_date, GETDATE()) % 60) + 'min ' +
+    	--CONVERT(VARCHAR(5), DATEDIFF(SECOND, a.start_execution_date, GETDATE()) % 60) + 'sec' AS Duration,
 	FORMAT(DATEADD(SECOND, DATEDIFF(SECOND, a.start_execution_date, GETDATE()), '19000101'), 'HH:mm:ss') AS Duration,
 	FORMAT(a.start_execution_date, 'yyyy-MM-dd') AS RunDate
 FROM msdb.dbo.sysjobs j
