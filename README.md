@@ -1,1 +1,1 @@
-SQL scripts
+SQL scripts for monitoring
