@@ -39,7 +39,7 @@ BEGIN
         DECLARE @message NVARCHAR(MAX);
 		
         SET @message = '<html><body>' +
-            '<p>Error Messages for the Last Hour: + </p>' +
+            '<p>Error Messages for the Last Hour: </p>' +
             '<table style="border-collapse: collapse; padding : 0px">' +
             	'<tr>
 			<th style="border: 2px solid #8c0416;text-align:center;padding: 5px;background-color: #D70040;color: #FFFFFF;">Job Name</th>
