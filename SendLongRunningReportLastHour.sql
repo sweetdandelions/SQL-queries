@@ -8,7 +8,6 @@ BEGIN
     -- Create a table variable to store long running jobs
     DECLARE @LongRunningMessages TABLE
     (
-        
         JobName NVARCHAR(128),
         StartTime NVARCHAR(128),
         RunStatus NVARCHAR(MAX),
@@ -27,10 +26,11 @@ SELECT
 		WHEN a.start_execution_date IS NOT NULL AND a.stop_execution_date IS NULL THEN 'Running'
 		WHEN a.start_execution_date IS NOT NULL AND a.stop_execution_date IS NOT NULL THEN 'Not running'
 	END AS 'RunStatus',
-	--CONVERT(VARCHAR(5), DATEDIFF(HOUR, a.start_execution_date, GETDATE())) + 'h ' +
-    	--CONVERT(VARCHAR(5), DATEDIFF(MINUTE, a.start_execution_date, GETDATE()) % 60) + 'min ' +
-    	--CONVERT(VARCHAR(5), DATEDIFF(SECOND, a.start_execution_date, GETDATE()) % 60) + 'sec' AS Duration,
-	FORMAT(DATEADD(SECOND, DATEDIFF(SECOND, a.start_execution_date, GETDATE()), '19000101'), 'HH:mm:ss') AS Duration,
+	CONVERT(VARCHAR(5), DATEDIFF(DAY, a.start_execution_date, GETDATE())) + 'd ' +
+	CONVERT(VARCHAR(5), DATEDIFF(HOUR, a.start_execution_date, GETDATE()) % 24) + 'h ' +
+    	CONVERT(VARCHAR(5), DATEDIFF(MINUTE, a.start_execution_date, GETDATE()) % 60) + 'min ' +
+   	CONVERT(VARCHAR(5), DATEDIFF(SECOND, a.start_execution_date, GETDATE()) % 60) + 'sec' AS Duration,
+	--FORMAT(DATEADD(SECOND, DATEDIFF(SECOND, a.start_execution_date, GETDATE()), '19000101'), 'HH:mm:ss') AS Duration,
 	FORMAT(a.start_execution_date, 'yyyy-MM-dd') AS RunDate
 FROM msdb.dbo.sysjobs j
 JOIN msdb.dbo.sysjobactivity a
