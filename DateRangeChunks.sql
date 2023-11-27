@@ -1,3 +1,4 @@
+-- SNOWFLAKE--
 -- DAYS
 SELECT * FROM (
   SELECT row_number() over (ORDER BY NULL)-1 AS rn
