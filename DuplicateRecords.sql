@@ -22,3 +22,13 @@ WITH DuplicatesCTE AS (
 SELECT *
 FROM DuplicatesCTE
 WHERE RowNum > 1;
+
+-------------------------------
+
+SELECT
+    create_date,
+    LISTAGG(distinct SEQUENCE_NUMBER_FOR_DAY, ',') WITHIN GROUP (ORDER BY SEQUENCE_NUMBER_FOR_DAY) AS sequence_numbers
+FROM mytable
+GROUP BY create_date
+HAVING COUNT(SEQUENCE_NUMBER_FOR_DAY) > 1
+ORDER BY create_date DESC;
