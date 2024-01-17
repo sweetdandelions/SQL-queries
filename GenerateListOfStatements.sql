@@ -8,7 +8,7 @@ from information_schema.columns c join
      (
        t.table_schema = c.table_schema and
        t.table_name = c.table_name and
-       t.table_type = 'BASE TABLE'
+       t.table_type = 'BASE TABLE' -- table_type can be base table or view
      )
 where c.column_name in ('column_name1', 'column_name2')
   and c.table_schema not in ('schema_name1', 'schema_name2')
