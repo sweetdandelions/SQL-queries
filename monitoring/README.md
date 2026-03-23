@@ -185,3 +185,7 @@ Each group gets a section header showing the group name and job count, followed 
 
 ### DST Safety
 `expected_start_sla_dt` and `expected_stop_sla_dt` are full ISO 8601 timestamps with correct UTC offsets emitted from Snowflake. The XSLT casts them with `xs:dateTime()` and compares against `current-dateTime()` (which SnapLogic provides in UTC). Because the offset is embedded in the timestamp itself, the comparison is always timezone-correct regardless of DST.
+
+---
+### Final Table output
+<img width="1440" height="1544" alt="image" src="https://github.com/user-attachments/assets/7f522394-ccda-413c-8b3b-61bfb2caad09" />
