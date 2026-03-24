@@ -114,6 +114,16 @@
 													format-date(xs:date(substring(expected_start_sla_dt, 1, 10)), '[FNn]'),
 												1, 3))
 										)
+										or (
+											starts-with(occurrence, 'Quarterly')
+											and contains(occurrence,
+												string(day-from-date(xs:date(substring(expected_start_sla_dt, 1, 10)))))
+										)
+										or (
+											starts-with(occurrence, 'Adhoc/New')
+											and contains(occurrence,
+												string(day-from-date(xs:date(substring(expected_start_sla_dt, 1, 10)))))
+										)
 									)
 									and (
 									(status = 'Waiting' and current-dateTime() > xs:dateTime(expected_start_sla_dt))
