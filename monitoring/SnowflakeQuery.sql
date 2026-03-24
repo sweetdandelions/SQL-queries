@@ -305,6 +305,6 @@ ORDER BY
 		WHEN e.occurrence ILIKE 'Weekly%'
 		THEN DAYOFWEEKISO(NEXT_DAY(CURRENT_DATE, TRIM(SUBSTR(e.occurrence, 8))))
 		ELSE TRY_CAST(REGEXP_REPLACE(e.occurrence, '[^0-9]', '') AS INTEGER)
-	END DESC NULLS FIRST,
+	END DESC,
 e.expected_start::TIME DESC,
 e.pkg_nm;
