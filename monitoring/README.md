@@ -85,8 +85,8 @@ Applies classification logic to assign each job a frequency label (`occurrence`)
 | `Weekly {Day}` | Clear 7-day gap pattern, or consistent single day of week |
 | `Bi-Weekly` | Mode gap of ~14 days |
 | `Monthly {Nth}` | Mode gap of ~30 days, or consistent day-of-month |
-| `Quarterly` | Very sparse runs or gaps of 60+ days |
-| `Adhoc/New` | Everything else |
+| `Quarterly {Nth}` | Very sparse runs or gaps of 60+ days |
+| `Adhoc/New {Nth}` | Everything else |
 
 ---
 
@@ -147,7 +147,7 @@ Each job is assigned to a group based on the following priority logic:
 3. **Running / Completed / Waiting** — normal status pass-through
 4. **Other** — anything else
 
-The "scheduled to run today" check filters out weekly/monthly jobs that are not due today, so they don't falsely appear as SLA breaches on off-days.
+The "scheduled to run today" check filters out weekly, monthly, quarterly, and adhoc/new jobs that are not due today, so they don't falsely appear as SLA breaches on off-days.
 
 ---
 
