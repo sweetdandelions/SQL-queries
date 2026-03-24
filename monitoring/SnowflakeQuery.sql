@@ -297,6 +297,7 @@ ORDER BY
 		WHEN e.occurrence = 'Mon-Fri' THEN 1
 		WHEN e.occurrence ILIKE 'Weekly%' THEN 2
 		WHEN e.occurrence ILIKE 'Monthly%' THEN 3
+		WHEN e.occurrence ILIKE 'Quarterly%' THEN 4
 		ELSE 5
 	END,
 e.expected_start::TIME DESC,
