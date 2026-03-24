@@ -41,13 +41,6 @@ job_calendar_analysis AS (
 				ORDER BY DATEDIFF('second', '00:00:00'::TIME, run_time)
 			)::INT,
 			'00:00:00'::TIME
-		) AS inferred_sla_time,
-		
-		DATEADD('second',
-			PERCENTILE_CONT(0.10) WITHIN GROUP (
-				ORDER BY DATEDIFF('second', '00:00:00'::TIME, run_time)
-			)::INT,
-			'00:00:00'::TIME
 		) AS inferred_start_time,
 		
 		DATEADD('second',
@@ -127,7 +120,6 @@ classified_jobs_base AS (
 		dow.unique_days,
 		dom.dom AS most_common_dom,
 		dom.cnt AS dom_cnt,
-		jca.inferred_sla_time,
 		jca.inferred_start_time,
 		jca.inferred_stop_time,
 		jca.last_run_date
@@ -155,7 +147,6 @@ classified_jobs AS (
 		unique_days,
 		most_common_dom,
 		dom_cnt,
-		inferred_sla_time,
 		inferred_start_time,
 		inferred_stop_time,
 		last_run_date,
@@ -184,6 +175,7 @@ classified_jobs AS (
 			WHEN mode_gap BETWEEN 13 AND 15 
 				AND (total_gaps >= 2 OR total_runs >= 3)
 				THEN 'Bi-Weekly'
+				
 			-- MONTHLY: ~30 day gaps OR consistent day-of-month
 			WHEN (monthly_pattern_count::FLOAT / NULLIF(total_gaps, 0) >= 0.6)
 				OR (mode_gap BETWEEN 28 AND 31 AND total_gaps >= 2)
@@ -196,12 +188,28 @@ classified_jobs AS (
 						WHEN most_common_dom % 10 = 3 THEN most_common_dom::VARCHAR || 'rd'
 						ELSE most_common_dom::VARCHAR || 'th'
 					END
+					
 			-- QUARTERLY: Very sparse or long gaps
 			WHEN total_runs <= 3 OR (avg_gap >= 60 OR mode_gap >= 60)
-				THEN 'Quarterly'
-			ELSE 'Adhoc/New'
+				THEN 'Quarterly ' || 
+					CASE 
+						WHEN most_common_dom IN (11, 12, 13) THEN most_common_dom::VARCHAR || 'th'
+						WHEN most_common_dom % 10 = 1 THEN most_common_dom::VARCHAR || 'st'
+						WHEN most_common_dom % 10 = 2 THEN most_common_dom::VARCHAR || 'nd'
+						WHEN most_common_dom % 10 = 3 THEN most_common_dom::VARCHAR || 'rd'
+						ELSE most_common_dom::VARCHAR || 'th'
+					END
+					
+			ELSE 'Adhoc/New ' || 
+				CASE 
+					WHEN most_common_dom IN (11, 12, 13) THEN most_common_dom::VARCHAR || 'th'
+					WHEN most_common_dom % 10 = 1 THEN most_common_dom::VARCHAR || 'st'
+					WHEN most_common_dom % 10 = 2 THEN most_common_dom::VARCHAR || 'nd'
+					WHEN most_common_dom % 10 = 3 THEN most_common_dom::VARCHAR || 'rd'
+					ELSE most_common_dom::VARCHAR || 'th'
+				END
 		END AS occurrence
-	FROM classified_jobs_base
+FROM classified_jobs_base
 ),
 
 -- P90 runtime for zombie detection
@@ -223,9 +231,8 @@ expected_packages AS (
 	SELECT
 		pkg_nm,
 		occurrence,
-		inferred_sla_time AS sla,
 		inferred_start_time AS expected_start,
-		COALESCE(inferred_stop_time, inferred_sla_time) AS expected_stop
+		COALESCE(inferred_stop_time, inferred_start_time) AS expected_stop
 	FROM classified_jobs, params
 	WHERE (occurrence ILIKE 'Daily%'
 			OR occurrence ILIKE 'Mon-Fri%'
@@ -238,7 +245,7 @@ expected_packages AS (
 		AND pkg_nm NOT ILIKE '%Manual%'
 		AND pkg_nm NOT ILIKE '%Reload%'
 		AND pkg_nm NOT IN (
-			'Daily.SomeJob', 
+			'Daily.SomeJob'
 		)
 ),
 
@@ -269,7 +276,7 @@ SELECT
 			AND (
 				(r.p90_runtime_seconds IS NOT NULL AND CURRENT_TIMESTAMP() > DATEADD(SECOND, r.p90_runtime_seconds, t.start_dt))
 					OR
-				(r.p90_runtime_seconds IS NULL AND CURRENT_TIMESTAMP() > TO_TIMESTAMP_NTZ(TO_CHAR(t.load_dt::DATE,'YYYY-MM-DD') || ' ' || e.sla, 'YYYY-MM-DD HH24:MI:SS'))
+				(r.p90_runtime_seconds IS NULL AND CURRENT_TIMESTAMP() > TO_TIMESTAMP_NTZ(TO_CHAR(t.load_dt::DATE,'YYYY-MM-DD') || ' ' || e.expected_stop, 'YYYY-MM-DD HH24:MI:SS'))
 			)
 		THEN 'No data'
 		-- Normal running
@@ -279,7 +286,8 @@ SELECT
 	e.occurrence,
 	TO_TIME(CONVERT_TIMEZONE('UTC', 'Europe/Berlin', TO_TIMESTAMP_NTZ(TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD') || ' ' || e.expected_start::VARCHAR, 'YYYY-MM-DD HH24:MI:SS'))) AS expected_start,
 	TO_TIME(CONVERT_TIMEZONE('UTC', 'Europe/Berlin', TO_TIMESTAMP_NTZ(TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD') || ' ' || e.expected_stop::VARCHAR, 'YYYY-MM-DD HH24:MI:SS'))) AS expected_completion,
-	TO_CHAR(CONVERT_TIMEZONE('UTC', 'Europe/Berlin', TO_TIMESTAMP_NTZ(TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD') || ' ' || e.sla::VARCHAR, 'YYYY-MM-DD HH24:MI:SS')), 'YYYY-MM-DD"T"HH24:MI:SS"+01:00"') AS expected_sla_dt
+	TO_CHAR(CONVERT_TIMEZONE('Europe/Berlin', TO_TIMESTAMP_TZ(TO_CHAR(CURRENT_DATE,'YYYY-MM-DD') || ' ' || e.expected_start::VARCHAR || ' +00:00', 'YYYY-MM-DD HH24:MI:SS TZH:TZM')), 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS expected_start_sla_dt,
+	TO_CHAR(CONVERT_TIMEZONE('Europe/Berlin', TO_TIMESTAMP_TZ(TO_CHAR(CURRENT_DATE,'YYYY-MM-DD') || ' ' || e.expected_stop::VARCHAR || ' +00:00', 'YYYY-MM-DD HH24:MI:SS TZH:TZM')), 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS expected_stop_sla_dt
 FROM expected_packages e
 LEFT JOIN today_exec t ON e.pkg_nm = t.pkg_nm
 LEFT JOIN runtime_stats r ON e.pkg_nm = r.pkg_nm
