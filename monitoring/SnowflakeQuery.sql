@@ -240,6 +240,7 @@ expected_packages AS (
 			OR occurrence ILIKE 'Monthly%'
 			OR occurrence ILIKE 'Quarterly%'
 			OR occurrence ILIKE 'Adhoc/New%'
+			OR occurrence ILIKE 'Bi-Weekly%'
 		)
 		AND last_run_date >= CURRENT_DATE - lookback_days
 		AND pkg_nm NOT ILIKE '%Manual%'
@@ -300,5 +301,10 @@ ORDER BY
 		WHEN e.occurrence ILIKE 'Quarterly%' THEN 4
 		ELSE 5
 	END,
+	CASE
+		WHEN e.occurrence ILIKE 'Weekly%'
+		THEN DAYOFWEEKISO(NEXT_DAY(CURRENT_DATE, TRIM(SUBSTR(e.occurrence, 8))))
+		ELSE TRY_CAST(REGEXP_REPLACE(e.occurrence, '[^0-9]', '') AS INTEGER)
+	END DESC NULLS FIRST,
 e.expected_start::TIME DESC,
 e.pkg_nm;
