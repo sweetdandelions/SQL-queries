@@ -12,8 +12,10 @@ The system consists of two parts:
 ## Part 1: Snowflake SQL Query
 
 ### `params`
-Defines two global constants used throughout the query:
+Defines global constants used throughout the query:
 - `lookback_days = 90` — how far back to look for historical runs
+- `yearly_lookback = 365` - extended lookback used for quarterly month aggregation
+- `maturity_days = 7` - minimum age of a job before maturity-based classification applies
 - `min_business_day_runs = 5` — minimum number of business day runs required to classify a job as Mon-Fri
 
 ---
@@ -24,6 +26,11 @@ Pulls all raw execution records from the last 90 days from `SL_EXEC_LOG`. For ea
 - The stop time (from `stop_dt`)
 - The day name (Monday, Tuesday, etc.)
 - A flag indicating whether the run was on a business day (Mon–Fri)
+
+---
+
+### `last_year_runs`
+Pulls the last 365 days of execution records (date only, no time). Used exclusively for the quarterly month aggregation — identifying which calendar months a job has run in over the past year, which is too sparse to detect reliably in the 90-day window.
 
 ---
 
@@ -39,6 +46,7 @@ Aggregates execution history per job to produce key metrics:
 - `business_days_with_runs` — how many unique business days the job ran on
 - `total_business_days_in_period` — total business days available in the window (from `date_series`)
 - `last_run_date` — most recent run date
+- `first_run_date / days_since_first_run` - used in maturity-based classification fallback
 - `inferred_start_time` — **P10 of historical start times**: the time by which the earliest 10% of runs have started; used as the expected start / "should have started by" threshold
 - `inferred_stop_time` — **P90 of historical stop times**: the time by which 90% of runs have completed; used as the SLA completion deadline
 
@@ -68,13 +76,18 @@ Finds the most common day of the month each job runs on. Used to label monthly j
 
 ---
 
+### `all_quarterly_months`
+Using the 365-day lookback, aggregates the distinct calendar months each job has run in (as 3-char abbreviations, e.g. Jan Apr Jul Oct) ordered chronologically. Appended to the Quarterly label so the report shows which months the job is expected.
+
+---
+
 ### `classified_jobs_base`
 Joins all the above CTEs together into a single flat row per job, combining run statistics, gap statistics, day-of-week, and day-of-month information.
 
 ---
 
 ### `classified_jobs`
-Applies classification logic to assign each job a frequency label (`occurrence`) based on its run patterns:
+Applies classification logic to assign each job a frequency label (`occurrence`) based on its run patterns. A maturity-based fallback applies for jobs with at least maturity_days days since first run and a measurable avg_gap, using ratio-based thresholds to reach Daily → Mon-Fri → Weekly → Bi-Weekly → Monthly → Quarterly before falling back to Adhoc/New.
 
 | Label | Condition |
 |---|---|
@@ -122,6 +135,8 @@ Joins `expected_packages`, `today_exec`, and `runtime_stats` to produce the fina
 | `Unknown` | Any other case |
 
 **Timezone handling:** `expected_start` and `expected_completion` are displayed in CET/CEST (Europe/Berlin). `expected_start_sla_dt` and `expected_stop_sla_dt` are emitted as ISO 8601 timestamps with the correct dynamic UTC offset (`+01:00` in winter, `+02:00` in summer) for use in XSLT datetime comparisons — DST-safe because Snowflake resolves the `Europe/Berlin` timezone rules at query time.
+
+**Sort order:** Jobs are sorted by occurrence group (Daily first, then Mon-Fri, Weekly, Bi-Weekly, Monthly, Quarterly, Adhoc/New), then by numeric day extracted via REGEXP_REPLACE/TRY_CAST within each group, then by expected start time descending.
 
 ---
 
