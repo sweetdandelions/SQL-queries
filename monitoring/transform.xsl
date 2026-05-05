@@ -104,8 +104,8 @@
 										)
 										or (
 											starts-with(occurrence, 'Monthly')
-											and contains(occurrence,
-												string(day-from-date(xs:date(substring(expected_start_sla_dt, 1, 10)))))
+											and number(translate(substring-after(occurrence, 'Monthly '), 'abcdefghijklmnopqrstuvwxyz', ''))
+												= day-from-date(xs:date(substring(expected_start_sla_dt, 1, 10)))
 										)
 										or (
 											occurrence = 'Mon-Fri'
@@ -116,9 +116,13 @@
 										)
 										or (
 											starts-with(occurrence, 'Quarterly')
-											and contains(occurrence,
-												string(day-from-date(xs:date(substring(expected_start_sla_dt, 1, 10)))))
-										)
+											and(contains(occurrence, 
+												substring(format-date(xs:date(substring(expected_start_sla_dt, 1, 10)), '[MNn]'),1,3))
+											)
+											and(
+											number(translate(substring-after(occurrence, 'Quarterly '),'abcdefghijklmnopqrstuvwxyz,. ',''))=
+												day-from-date(xs:date(substring(expected_start_sla_dt, 1, 10)))
+											))
 										or (
 											starts-with(occurrence, 'Adhoc/New')
 											and contains(occurrence,
