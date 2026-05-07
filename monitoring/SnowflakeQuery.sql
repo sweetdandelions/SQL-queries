@@ -186,7 +186,9 @@ classified_jobs AS (
 			-- FREQUENT
 			WHEN total_runs / 90.0 > 10 THEN 'Frequent'
 			-- DAILY
-			WHEN distinct_run_days / 90.0 >= 0.6 THEN 'Daily'
+			WHEN distinct_run_days / 90.0 >= 0.6
+				AND (distinct_run_days / 90.0 >= 0.75 OR distinct_run_days > business_days_with_runs)
+			THEN 'Daily'
 			-- MULTIPLE DAILY
 			WHEN total_runs / 90.0 > 1.5 THEN 'Multiple Daily'
 			-- MONDAY TO FRIDAY - WEEKDAYS
